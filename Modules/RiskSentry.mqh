@@ -15,7 +15,7 @@ public:
    }
    ~CRiskSentry() {}
    
-   TradeInfo CalculateTradeLevels(ENUM_DIRECTION dir, BBParameters params)
+   TradeInfo CalculateTradeLevels(ENUM_DIRECTION dir, BBParameters &params)
    {
       TradeInfo info;
       info.direction = dir;
