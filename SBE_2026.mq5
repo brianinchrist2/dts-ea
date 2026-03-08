@@ -8,18 +8,18 @@
 #property version   "1.00"
 #property description "Sovereign Bollinger Engine (SBE-2026) - Multi-layer Bollinger Bands with regime detection, signal purification, and extreme execution protocols."
 #property description "Integration with DTS service for trade execution."
-#property strict
 
 //--- Includes
-#include <Modules/RegimeOracle.mqh>
-#include <Modules/SignalPurifier.mqh>
-#include <Modules/ExecutionEngine.mqh>
-#include <Modules/RiskSentry.mqh>
-#include <Modules/GlobalGating.mqh>
-#include <Modules/DTSClient.mqh>
-#include <Utilities/Logger.mqh>
-#include <Utilities/ConfigManager.mqh>
-#include <Utilities/Indicators.mqh>
+#include "SBE_2026.mqh"
+#include "Modules/RegimeOracle.mqh"
+#include "Modules/SignalPurifier.mqh"
+#include "Modules/ExecutionEngine.mqh"
+#include "Modules/RiskSentry.mqh"
+#include "Modules/GlobalGating.mqh"
+#include "Modules/DTSClient.mqh"
+#include "Utilities/Logger.mqh"
+#include "Utilities/ConfigManager.mqh"
+#include "Utilities/Indicators.mqh"
 
 //--- Input Parameters
 // Global Gating
@@ -110,7 +110,10 @@ int OnInit()
          return INIT_FAILED;
    }
    
-   lastBarTime = Time[0];
+   // Initialize 5-second timer for OnTimer() loop
+   EventSetTimer(5);
+   
+   lastBarTime = iTime(_Symbol, _Period, 0);
    isFirstTick = true;
    
    logger.Info("SBE-2026 initialization completed successfully");
@@ -124,15 +127,18 @@ void OnDeinit(const int reason)
 {
    logger.Info("Deinitializing SBE-2026 Expert Advisor. Reason: " + IntegerToString(reason));
    
-   // Delete modules
-   delete dtsClient;
-   delete globalGating;
-   delete riskSentry;
-   delete executionEngine;
-   delete signalPurifier;
-   delete regimeOracle;
-   delete config;
-   delete logger;
+   // Kill timer properly
+   EventKillTimer();
+   
+   // Delete modules with pointer checking to prevent terminal crash
+   if(CheckPointer(dtsClient) == POINTER_DYNAMIC) delete dtsClient;
+   if(CheckPointer(globalGating) == POINTER_DYNAMIC) delete globalGating;
+   if(CheckPointer(riskSentry) == POINTER_DYNAMIC) delete riskSentry;
+   if(CheckPointer(executionEngine) == POINTER_DYNAMIC) delete executionEngine;
+   if(CheckPointer(signalPurifier) == POINTER_DYNAMIC) delete signalPurifier;
+   if(CheckPointer(regimeOracle) == POINTER_DYNAMIC) delete regimeOracle;
+   if(CheckPointer(config) == POINTER_DYNAMIC) delete config;
+   if(CheckPointer(logger) == POINTER_DYNAMIC) delete logger;
 }
 
 //+------------------------------------------------------------------+
@@ -140,10 +146,12 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   datetime currentBarTime = iTime(_Symbol, _Period, 0);
+
    // Check for new bar (process on bar open)
-   if(Time[0] != lastBarTime)
+   if(currentBarTime != lastBarTime)
    {
-      lastBarTime = Time[0];
+      lastBarTime = currentBarTime;
       isFirstTick = true;
    }
    
@@ -164,7 +172,7 @@ void OnTick()
       return;
    
    // Step 3: Check for existing positions
-   if(dtsClient.HasOpenPosition(Symbol()))
+   if(dtsClient.HasOpenPosition(_Symbol))
    {
       // Monitor and manage existing positions
       ManageExistingPositions(regime);
@@ -226,14 +234,14 @@ void ExecuteTrade(ENUM_DIRECTION direction, ENUM_REGIME regime)
    TradeInfo trade = riskSentry.CalculateTradeLevels(direction, params);
    
    // Execute trade via DTS client or native MT5
-   bool success = dtsClient.ExecuteTrade(Symbol(), direction, trade.volume,
+   bool success = dtsClient.ExecuteTrade(_Symbol, direction, trade.volume,
                                          trade.entryPrice, trade.stopLoss,
                                          trade.takeProfit, "DMAS-API");
    
    if(success)
    {
       logger.Info(StringFormat("Trade executed: %s %s at %.5f, SL: %.5f, TP: %.5f",
-                               Symbol(), direction == DIRECTION_BUY ? "BUY" : "SELL",
+                               _Symbol, direction == DIRECTION_BUY ? "BUY" : "SELL",
                                trade.entryPrice, trade.stopLoss, trade.takeProfit));
    }
    else
@@ -248,14 +256,14 @@ void ExecuteTrade(ENUM_DIRECTION direction, ENUM_REGIME regime)
 void ManageExistingPositions(ENUM_REGIME regime)
 {
    // Check for exit signals (BZD, stop loss, take profit)
-   if(riskSentry.CheckExitSignal(Symbol(), regime))
+   if(riskSentry.CheckExitSignal(_Symbol, regime))
    {
-      dtsClient.ClosePosition(Symbol());
+      dtsClient.ClosePosition(_Symbol);
       logger.Info("Position closed due to exit signal");
    }
    
    // Check for circuit breaker (MAD-CB)
-   if(riskSentry.CheckCircuitBreaker(Symbol()))
+   if(riskSentry.CheckCircuitBreaker(_Symbol))
    {
       dtsClient.CloseAllPositions();
       logger.Warning("Circuit breaker triggered - all positions closed");
@@ -267,7 +275,7 @@ void ManageExistingPositions(ENUM_REGIME regime)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
-   // Optional: Periodic tasks like updating DTS connection status
+   // Periodic tasks like updating DTS connection status
    if(UseDTSForExecution)
       dtsClient.CheckConnection();
 }
