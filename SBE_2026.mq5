@@ -48,8 +48,8 @@ input double ATRLowPercentile = 25.0;           // Low volatility percentile
 input double ATRHighPercentile = 75.0;          // High volatility percentile
 
 // Risk Sentry
-input double DSSPLongMultiplier = 2.5;          // Long stop loss multiplier (σ)
-input double DSSPShortMultiplier = 1.5;         // Short stop loss multiplier (σ)
+input double DSSPLongMultiplier = 3.5;          // Long stop loss multiplier (σ)
+input double DSSPShortMultiplier = 3.5;         // Short stop loss multiplier (σ)
 input double BZDThreshold = 2.5;                // Bandwidth Z-Score threshold for exit
 input double MADCBThreshold = 3.5;              // MAD-CB circuit breaker threshold (σ)
 

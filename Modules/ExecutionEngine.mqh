@@ -23,20 +23,21 @@ public:
    {
       double lower[2], upper[2], close[2];
       
-      // Get the last 2 bars of data (0 = current forming bar, 1 = last closed bar)
+      // Get the last 2 closed bars (index 1 and 2)
+      // Array mapping: [0] = bar index 2 (older), [1] = bar index 1 (latest closed)
       if(CopyBuffer(m_bbHandle, 2, 1, 2, lower) <= 0) return DIRECTION_NONE;
       if(CopyBuffer(m_bbHandle, 1, 1, 2, upper) <= 0) return DIRECTION_NONE;
       if(CopyClose(_Symbol, _Period, 1, 2, close) <= 0) return DIRECTION_NONE;
       
       if(isLong)
       {
-         // Buy signal: Previous close was below lower band, current close is above it (rebound)
+         // Buy signal: Pullback touching lower band, returning inside
          if(close[0] < lower[0] && close[1] > lower[1]) 
             return DIRECTION_BUY;
       }
       else
       {
-         // Sell signal: Previous close was above upper band, current close is below it (rebound)
+         // Sell signal: Rally touching upper band, returning inside
          if(close[0] > upper[0] && close[1] < upper[1]) 
             return DIRECTION_SELL;
       }
@@ -46,14 +47,17 @@ public:
    
    ENUM_DIRECTION MeanReversionSignal()
    {
-      // Simplistic mean reversion: just take the opposite signals
-      double lower[1], upper[1], close[1];
-      CopyBuffer(m_bbHandle, 2, 1, 1, lower);
-      CopyBuffer(m_bbHandle, 1, 1, 1, upper);
-      CopyClose(_Symbol, _Period, 1, 1, close);
+      double lower[2], upper[2], close[2];
       
-      if(close[0] <= lower[0]) return DIRECTION_BUY;
-      if(close[0] >= upper[0]) return DIRECTION_SELL;
+      if(CopyBuffer(m_bbHandle, 2, 1, 2, lower) <= 0) return DIRECTION_NONE;
+      if(CopyBuffer(m_bbHandle, 1, 1, 2, upper) <= 0) return DIRECTION_NONE;
+      if(CopyClose(_Symbol, _Period, 1, 2, close) <= 0) return DIRECTION_NONE;
+      
+      // Buy: previous close outside/touching lower, current close back inside
+      if(close[0] <= lower[0] && close[1] > lower[1]) return DIRECTION_BUY;
+      
+      // Sell: previous close outside/touching upper, current close back inside
+      if(close[0] >= upper[0] && close[1] < upper[1]) return DIRECTION_SELL;
       
       return DIRECTION_NONE;
    }
