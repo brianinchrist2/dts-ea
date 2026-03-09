@@ -38,16 +38,16 @@ void OnTick() {
    if(CopyBuffer(bbHandle, 2, 1, 2, lower) <= 0) return;
    if(CopyBuffer(bbHandle, 0, 1, 1, mid) <= 0) return;
 
-   // Fetch H4 data for Order Blocks (Highest/Lowest of last 20 H4 bars)
-   double h4High[20], h4Low[20];
-   if(CopyHigh(_Symbol, PERIOD_H4, 1, 20, h4High) <= 0) return;
-   if(CopyLow(_Symbol, PERIOD_H4, 1, 20, h4Low) <= 0) return;
+   // Fetch pseudo-H4 data for Order Blocks (Highest/Lowest of last 320 M15 bars = 20 H4 bars)
+   double m15High[320], m15Low[320];
+   if(CopyHigh(_Symbol, _Period, 1, 320, m15High) <= 0) return;
+   if(CopyLow(_Symbol, _Period, 1, 320, m15Low) <= 0) return;
    
-   double maxH4 = h4High[0];
-   double minH4 = h4Low[0];
-   for(int i=1; i<20; i++) {
-      if(h4High[i] > maxH4) maxH4 = h4High[i];
-      if(h4Low[i] < minH4) minH4 = h4Low[i];
+   double maxH4 = m15High[0];
+   double minH4 = m15Low[0];
+   for(int i=1; i<320; i++) {
+      if(m15High[i] > maxH4) maxH4 = m15High[i];
+      if(m15Low[i] < minH4) minH4 = m15Low[i];
    }
    
    double rangeH4 = maxH4 - minH4;

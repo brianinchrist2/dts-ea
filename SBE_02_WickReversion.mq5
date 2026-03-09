@@ -8,7 +8,7 @@
 
 input double LotSize = 0.01;
 input int BBPeriod = 20;
-input double BBDev = 3.5;
+input double BBDev = 3.0; // Reduced from 3.5
 input int ADXPeriod = 14;
 
 CTrade trade;
@@ -66,13 +66,13 @@ void OnTick() {
 
    // Regime: Ranging (ADX < 25)
    if(adx[0] < 25.0) {
-      // Long: touched 3.5 lower band, closed inside, long wick (Pinbar)
-      if(low[0] < lower[0] && close[0] > lower[0] && lowerWick > body * 1.5) {
+      // Long: touched 3.0 lower band, closed inside, long wick (Pinbar)
+      if(low[0] < lower[0] && close[0] > lower[0] && lowerWick > body * 1.0) {
          double sl = low[0] - (atr[0] * 0.5);
          trade.Buy(LotSize, _Symbol, 0, sl, 0, "WickReversion Buy");
       }
-      // Short: touched 3.5 upper band, closed inside, long wick
-      else if(high[0] > upper[0] && close[0] < upper[0] && upperWick > body * 1.5) {
+      // Short: touched 3.0 upper band, closed inside, long wick
+      else if(high[0] > upper[0] && close[0] < upper[0] && upperWick > body * 1.0) {
          double sl = high[0] + (atr[0] * 0.5);
          trade.Sell(LotSize, _Symbol, 0, sl, 0, "WickReversion Sell");
       }

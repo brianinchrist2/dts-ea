@@ -6,10 +6,7 @@ from datetime import datetime
 # --- 配置 MT5 路径 (请确认您的 MT5 路径是否正确) ---
 MT5_PATH = r"D:\mt5 A\terminal64.exe"
 EXPERT_PATH = r"dts-ea" # 在 MQL5\Experts 下的相对路径
-REPORTS_DIR = r"D:\mt5 A\MQL5\Files\BacktestReports"
-
-if not os.path.exists(REPORTS_DIR):
-    os.makedirs(REPORTS_DIR)
+REPORTS_DIR = os.getcwd()
 
 # --- 定义测试任务列表 ---
 # Model 参数含义: 0-Every tick, 1-1 min OHLC, 2-Open price only, 4-Every tick based on real ticks
@@ -33,7 +30,7 @@ Optimization=0
 FromDate=2025.12.01
 ToDate=2026.03.01
 ForwardMode=0
-Report={REPORTS_DIR}\\{task['name']}_Report
+Report={REPORTS_DIR}\\{task['name']}_Report.xml
 ReplaceReport=1
 ShutdownTerminal=1
 Visual=0
